@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<title>Livro Digital Interativo</title>
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column; /* para manter livro + botões verticalmente */
+    align-items: center;
+}
+.livro {
+    position: relative;
+    width: 800px;
+    padding: 40px;
+    margin-top: 40px;
+    border-radius: 15px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.3);
+}
+.icone-livro {
+    position: absolute;
+    top: 50px;
+    left: 20px;
+    width: 200px;
+    height: auto;
+    z-index: 100;
+}
+.topo-titulo {
+    text-align: center;
+    font-size: 50px;
+    font-weight: bold;
+    margin-bottom: 20px; 
+    color: #ff4500;
+    z-index: 100;
+    position: relative;
+}
+.topo-letra {
+    text-align: right;
+    font-size: 70px;
+    margin-bottom: 50px; 
+    font-weight: bold;
+    color: #1e90ff;
+}
+.topo-instrucoes {
+    text-align: center;
+    font-size: 32px;
+    margin-bottom: 15px;
+    color: #000;
+    font-weight: bold;
+}
+.pagina {
+    display: none;
+    flex-direction: column;
+    padding: 40px;
+    border-radius: 15px;
+    transition: opacity 0.5s ease;
+    opacity: 0;
+    position: relative;
+    z-index: 1;
+}
+.ativa { display: flex; opacity: 1; }
+.linha {
+    display: flex;
+    align-items: center;
+    margin: 25px 0;
+    gap: 15px;
+}
+img.pictograma {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    border-radius: 10px;
+    background: #fff;
+}
+.palavra {
+    font-size: 36px;
+    cursor: pointer;
+    min-width: 200px;
+    font-weight: bold;
+}
+input {
+    flex: 1;
+    font-size: 28px;
+    padding: 8px;
+    border: 3px solid #ccc;
+    border-radius: 6px;
+}
+.certo { border-color: green; background: #e6ffe6; }
+.errado { border-color: red; background: #ffe6e6; }
+.menu {
+    text-align: center;
+    margin-top: 20px; /* centraliza abaixo do livro */
+}
+button {
+    font-size: 20px;
+    padding: 10px 30px;
+    margin: 10px;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+}
+.button-anterior { background-color: #ff7f50; }
+.button-seguinte { background-color: #3cb44b; }
+.pagina-num { text-align: center; font-size: 24px; margin-top: 10px; font-weight: bold; }
+.contador { text-align: center; font-size: 24px; margin-top: 10px; font-weight: bold; color: #333; }
+.mensagem {
+    position: fixed;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #4CAF50;
+    color: white;
+    font-size: 40px;
+    padding: 30px 50px;
+    border-radius: 15px;
+    display: none;
+    box-shadow: 0 0 20px rgba(0,0,0,0.4);
+    z-index: 200;
+}
+.developers {
+    text-align: center;
+    font-size: 20px;
+    margin-top: 30px;
+    color: #555;
+    font-weight: bold;
+}
+</style>
+</head>
+<body>
+
+<div class="livro">
+<img src="https://png.pngtree.com/png-clipart/20240617/original/pngtree-kids-holding-open-books-and-reading-png-image_15348941.png" alt="Livro Infantil" class="icone-livro">
+<div class="topo-titulo">Livro Digital</div>
+</div>
+
+<div class="menu">
+    <button class="button-anterior" onclick="mudar(-1)">← Anterior</button>
+    <button class="button-seguinte" onclick="mudar(1)">Seguinte →</button>
+</div>
+
+<div id="mensagem" class="mensagem">🎉 Parabéns! 🎉</div>
+
+<script>
+// Dados do livro
+const ordemPaginas = ['P / p','T / t','L / l','D / d','M / m','V / v','C / c','N / n','R / r','B / b','G / g','S / s','J / j','F / f','Z / z','H / h','A / a','E / e','I / i','O / o','U / u','K / k','Q / q','W / w','X / x','Y / y'];
+
+const livroPalavras = {
+'P / p': ['pato','pipa','Pepe','pote','palito','papa'],
+'T / t': ['teia','tapete','tio','totó','Tito','apita'],
+'L / l': ['lata','loto','lupa','Lili','lua','lula'],
+'D / d': ['dedo','dado','data','Didi','dia','dália'],
+'M / m': ['mota','mala','Mimi','mãe','meia','mata'],
+'V / v': ['viola','vela','ovo','Violeta','Vilela','luva'],
+'C / c': ['cama','copo','cão','cola','capa','cuco'],
+'N / n': ['nota','novelo','neve','Nini','navio','nata'],
+'R / r': ['rato','roda','rua','remo','ramo','rola'],
+'B / b': ['bola','bolo','bata','bebé','Bela','bule'],
+'G / g': ['gato','gola','cogumelo','galo','Gugu','papagaio'],
+'S / s': ['sapo','sapato','sola','sol','sino','sopa'],
+'J / j': ['janela','judo','tijolo','jipe','laje','Jaime'],
+'F / f': ['foca','faca','Fátima','figo','fumo','fatia'],
+'Z / z': ['zínia','gazela','azulejo','azul','baliza','búzio'],
+'H / h': ['hiena','holofote','Helena','hipopótamo','hábito','humano'],
+'A / a': ['avião','abelha','amigo','amor','alface','anel'],
+'E / e': ['elefante','escola','estrela','energia','escova','enfeite'],
+'I / i': ['ilha','igreja','índio','iogurte','isqueiro','inverno'],
+'O / o': ['ovo','osso','olá','óculos','orvalho','onda'],
+'U / u': ['urso','uva','universo','util','unha','uniforme'],
+'K / k': ['kiwi','kilo','Kyara','kit','kilt','karting'],
+'Q / q': ['queijo','quarto','quilo','queque','querida','quero'],
+'W / w': ['Wilson','web','wifi','windsurf','whisky','web cam'],
+'X / x': ['xixi','táxi','eixo','exame','xerife','xana'],
+'Y / y': ['yak','yoga','yin','yoyo','Yara','Yuki']
+};
+
+const fundos = ['#ffe6e6','#e6f2ff','#e6ffe6','#fff0e6','#f2e6ff','#ffffe6','#e6ffff','#ffe6f2','#f9f9f9','#f0fff0','#f0f0ff','#fff0f0','#e6e6f9','#f9ffe6','#fff0cc','#ccffe6','#ffe6cc','#e6ccff','#fce6ff','#ccfff9','#f2f0e6','#e6f9ff','#ffe6f0','#f0ffe6','#fff6e6','#f0f6ff'];
+
+const paginas = [];
+
+function criarPagina(letraTopo, palavras, corFundo, numeroPagina){
+    let pagina = document.createElement('div');
+    pagina.classList.add('pagina');
+    pagina.style.background = corFundo;
+
+    let topo = document.createElement('div');
+    topo.classList.add('topo-letra');
+    topo.textContent = letraTopo;
+    pagina.appendChild(topo);
+
+    let instr = document.createElement('div');
+    instr.classList.add('topo-instrucoes');
+    instr.textContent = 'Copia as palavras:';
+    pagina.appendChild(instr);
+
+    palavras.forEach((palavra,i) => {
+        let linha = document.createElement('div');
+        linha.classList.add('linha');
+
+        // Imagem
+        let img = document.createElement('img');
+        img.className = 'pictograma';
+        img.src = 'imagens/' + palavra + '.png';
+        linha.appendChild(img);
+
+        // Palavra
+        let divPal = document.createElement('div');
+        divPal.classList.add('palavra');
+        divPal.style.color = ['#e6194b','#3cb44b','#000000','#4363d8','#f58231','#911eb4'][i%6];
+        divPal.textContent = palavra + ' 🔊';
+        divPal.onclick = () => falar(palavra);
+        linha.appendChild(divPal);
+
+        // Input
+        let input = document.createElement('input');
+        input.setAttribute('data-resposta', palavra);
+        linha.appendChild(input);
+
+        pagina.appendChild(linha);
+    });
+
+    let contador = document.createElement('div');
+    contador.classList.add('contador');
+    contador.textContent = 'Palavras corretas: 0 / 6';
+    pagina.appendChild(contador);
+
+    let numPag = document.createElement('div');
+    numPag.classList.add('pagina-num');
+    numPag.textContent = 'Página ' + numeroPagina + ' de ' + ordemPaginas.length;
+    pagina.appendChild(numPag);
+
+    document.querySelector('.livro').appendChild(pagina);
+    paginas.push(pagina);
+}
+
+let idx = 0;
+ordemPaginas.forEach((letra,i) => {
+    criarPagina(letra, livroPalavras[letra], fundos[idx%fundos.length], i+1);
+    idx++;
+});
+
+paginas[0].classList.add('ativa');
+
+let atual = 0;
+function mostrar(){ paginas.forEach((p,i)=>{ if(i===atual){ p.classList.add('ativa'); } else { p.classList.remove('ativa'); } }); }
+function mudar(d){
+    let proximo = atual + d;
+    if(proximo<0) proximo=0;
+    if(proximo>=paginas.length) proximo=paginas.length-1;
+    if(proximo!==atual){
+        paginas[atual].classList.remove('ativa');
+        atual=proximo;
+        paginas[atual].classList.add('ativa');
+    }
+}
+function falar(texto){ const fala = new SpeechSynthesisUtterance(texto); fala.lang='pt-PT'; speechSynthesis.speak(fala); }
+
+document.addEventListener('input', e => {
+    if(e.target.tagName !== 'INPUT') return;
+    const input = e.target;
+    const resposta = input.dataset.resposta;
+    const texto = input.value.trim();
+    input.classList.remove('certo','errado');
+    if(texto.length===0) return;
+    if(texto===resposta) input.classList.add('certo'); else input.classList.add('errado');
+    atualizarContador();
+    verificarPagina();
+});
+
+function atualizarContador(){
+    const inputs = paginas[atual].querySelectorAll('input');
+    let contador = paginas[atual].querySelector('.contador');
+    let corretas = Array.from(inputs).filter(i => i.classList.contains('certo')).length;
+    contador.textContent = `Palavras corretas: ${corretas} / 6`;
+}
+
+function verificarPagina(){
+    const inputs = paginas[atual].querySelectorAll('input');
+    let tudoCerto = Array.from(inputs).every(i => i.classList.contains('certo'));
+    if(tudoCerto) mostrarParabens();
+}
+
+function mostrarParabens(){
+    const msg = document.getElementById('mensagem');
+    msg.style.display='block';
+    setTimeout(()=>{ msg.style.display='none'; mudar(1); },2000);
+}
+</script>
+
+<div class="developers">Desenvolvido por Professor: Mário Menezes</b></div>
+
+</body>
+</html>
